@@ -1,0 +1,76 @@
+version: '3'
+
+services:
+
+  db:
+    image: postgres
+    container_name: db_app
+    env_file:
+      - .env
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DB=habit_tracker
+    user: postgres
+    healthcheck:
+      test: [ 'CMD-SHELL', 'pg_isready -U postgres' ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis
+    container_name: redis_app
+    command: redis-server --save 20 1 --loglevel warning
+    ports:
+      - "6379:6379"
+    volumes:
+      - ./data/cache:/data
+
+  app:
+    image: python:3.11.4-alpine317
+    build:
+      context: .
+      dockerfile: ./docker/Dockerfile
+    container_name: app_container
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    env_file:
+      - .env
+    ports:
+      - "8000:8000"
+    volumes:
+      - .:/app
+    tty: true
+
+
+  celery:
+    build: .
+    tty: true
+    environment:
+      - CELERY_BROKER_URL=${CELERY_BROKER_URL}
+      - CELERY_RESULT_BACKEND=${CELERY_RESULT_BACKEND}
+    command: celery -A config worker -l INFO
+    depends_on:
+      - redis
+      - app
+
+  celery_beat:
+    build: .
+    tty: true
+    env_file:
+      - .env
+    command: celery -A config beat -l INFO -S django
+    depends_on:
+      - redis
+      - app
+
+volumes:
+  pg_data:
