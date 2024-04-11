@@ -1,6 +1,8 @@
 # Используем базовый образ Python
 FROM python:3
 
+ENV PYTHONUNBUFFERED 1
+
 # Устанавливаем рабочую директорию в контейнере
 WORKDIR /app
 
