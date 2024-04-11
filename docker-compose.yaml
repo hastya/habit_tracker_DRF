@@ -4,7 +4,6 @@ services:
 
   db:
     image: postgres
-#    shm_size: 128mb
     container_name: postgres_db
     environment:
       - POSTGRES_USER=${POSTGRES_USER}
