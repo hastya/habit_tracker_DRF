@@ -32,7 +32,11 @@ services:
   app:
     build: .
     container_name: app
-    command: python manage.py migrate && python manage.py runserver 0.0.0.0:8000
+#    command: python manage.py migrate && python manage.py runserver 0.0.0.0:8000
+    command: >
+      bash -c "python manage.py makemigrations
+      && python manage.py migrate
+      && python manage.py runserver 0.0.0.0:8000"
     depends_on:
       db:
         condition: service_healthy
@@ -47,24 +51,36 @@ services:
     tty: true
 
 
+#  celery:
+#    build: .
+#    tty: true
+#    command: celery -A config worker -l INFO
+#    env_file:
+#      - .env
+#    depends_on:
+#      - redis
+#      - app
+#
+#
+#  celery_beat:
+#    build: .
+#    tty: true
+#    command: celery -A config beat -l INFO -S django
+#    depends_on:
+#      - redis
+#      - app
+
+
   celery:
     build: .
-    tty: true
-    command: celery -A config worker -l INFO
-    env_file:
-      - .env
+    command: >
+      bash -c "celery -A config worker --beat --loglevel=info"
+    volumes:
+      - .:/app # WORKDIR из Dockerfile
     depends_on:
-      - redis
       - app
-
-
-  celery_beat:
-    build: .
-    tty: true
-    command: celery -A config beat -l INFO -S django
-    depends_on:
       - redis
-      - app
+
 
 volumes:
   pg_data:

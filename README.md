@@ -40,3 +40,8 @@ docker-compose up
 Миграции:
 
 sudo docker-compose exec app python manage.py migrate
+
+Документация:
+
+http://localhost:8001/redoc
+
